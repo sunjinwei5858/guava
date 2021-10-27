@@ -26,6 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import junit.framework.TestCase;
 
 /**
+ * 大开眼界 直接继承TestCase就可以不需要写@Test注解
+ *
+ *
  * Unit test for {@link AbstractCache}.
  *
  * @author Charles Fry
@@ -33,7 +36,7 @@ import junit.framework.TestCase;
 public class AbstractCacheTest extends TestCase {
 
   public void testGetIfPresent() {
-    final AtomicReference<Object> valueRef = new AtomicReference<>();
+      final AtomicReference<Object> valueRef = new AtomicReference<>();
     Cache<Object, Object> cache =
         new AbstractCache<Object, Object>() {
           @Override
@@ -50,8 +53,7 @@ public class AbstractCacheTest extends TestCase {
   }
 
   public void testGetAllPresent_empty() {
-    Cache<Object, Object> cache =
-        new AbstractCache<Object, Object>() {
+    Cache<Object, Object> cache = new AbstractCache<Object, Object>() {
           @Override
           public Object getIfPresent(Object key) {
             return null;
