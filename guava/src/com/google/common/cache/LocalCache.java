@@ -14,15 +14,6 @@
 
 package com.google.common.cache;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.cache.CacheBuilder.NULL_TICKER;
-import static com.google.common.cache.CacheBuilder.UNSET_INT;
-import static com.google.common.util.concurrent.Futures.transform;
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.annotations.VisibleForTesting;
@@ -35,23 +26,13 @@ import com.google.common.cache.CacheBuilder.NullListener;
 import com.google.common.cache.CacheBuilder.OneWeigher;
 import com.google.common.cache.CacheLoader.InvalidCacheLoadException;
 import com.google.common.cache.CacheLoader.UnsupportedLoadingOperationException;
-import com.google.common.cache.LocalCache.AbstractCacheSet;
-import com.google.common.collect.AbstractSequentialIterator;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.ExecutionError;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
-import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.google.common.util.concurrent.Uninterruptibles;
+import com.google.common.util.concurrent.*;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.j2objc.annotations.RetainedWith;
 import com.google.j2objc.annotations.Weak;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -60,23 +41,8 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
-import java.util.AbstractCollection;
-import java.util.AbstractMap;
-import java.util.AbstractQueue;
-import java.util.AbstractSet;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
@@ -87,7 +53,14 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.cache.CacheBuilder.NULL_TICKER;
+import static com.google.common.cache.CacheBuilder.UNSET_INT;
+import static com.google.common.util.concurrent.Futures.transform;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * The concurrent hash map implementation built by {@link CacheBuilder}.
@@ -2180,7 +2153,8 @@ class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> 
         }
 
         /**
-         * 获取value的逻辑
+         * get的过程
+         *
          * @param key
          * @param hash
          * @return
@@ -2188,6 +2162,8 @@ class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> 
         @Nullable
         V get(Object key, int hash) {
             try {
+                // 先对count进行快速判断 count就是该segment里面的元素个数 使用了volatile修饰 保证可见性
+                // 如果count不为0 说明table有数据 才去缓存中找
                 if (count != 0) { // read-volatile
                     long now = map.ticker.read();
                     //
@@ -2464,9 +2440,7 @@ class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> 
                 V oldValue,
                 long now,
                 CacheLoader<? super K, V> loader) {
-            if (map.refreshes()
-                    && (now - entry.getWriteTime() > map.refreshNanos)
-                    && !entry.getValueReference().isLoading()) {
+            if (map.refreshes() && (now - entry.getWriteTime() > map.refreshNanos) && !entry.getValueReference().isLoading()) {
                 V newValue = refresh(key, hash, loader, true);
                 if (newValue != null) {
                     return newValue;
