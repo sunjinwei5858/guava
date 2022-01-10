@@ -1839,10 +1839,6 @@ class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> 
         checkNotNull(entry);
         // expiresAfterAccess 判断是否过期!!!!
 
-        System.out.println("now == " + now);
-        System.out.println("getAccessTime== " + entry.getAccessTime());
-        System.out.println("expireAfterAccessNanos== " + expireAfterAccessNanos);
-
         if (expiresAfterAccess() && (now - entry.getAccessTime() >= expireAfterAccessNanos)) {
             return true;
         }
