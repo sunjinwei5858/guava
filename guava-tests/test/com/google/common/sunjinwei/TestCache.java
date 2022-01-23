@@ -81,7 +81,7 @@ public class TestCache extends TestCase {
      * 场景2：缓存未过期 线程3和线程4都能命中缓存。
      * 场景3：缓存已经过期 线程5和线程6并发去请求 线程5进行load新数据，线程6返回旧值。【refreshAfterWrite返回旧值的处理方式解决了大量线程阻塞等待的问题】
      */
-    public void testCache03() throws InterruptedException {
+    public void testRefreshAfterWrite() throws InterruptedException {
 
         LoadingCache<Object, Object> cache = CacheBuilder.newBuilder()
                 .refreshAfterWrite(5, TimeUnit.SECONDS)
@@ -96,21 +96,21 @@ public class TestCache extends TestCase {
                 });
 
         // 场景1：线程1和线程2并发去请求，只有一个线程进行load数据，其余线程阻塞。
+        System.out.println("=====1=====");
         Thread thread1 = createThread(1, cache);
         Thread thread2 = createThread(2, cache);
-
         thread1.join();
         thread2.join();
 
-        System.out.println("==========");
-        // 缓存未过期 线程3和线程4都能命中缓存。
+        System.out.println("=====2=====");
+        // 场景2: 缓存未过期 线程3和线程4都能命中缓存。
         Thread thread3 = createThread(3, cache);
         Thread thread4 = createThread(4, cache);
         thread3.join();
         thread4.join();
 
-        System.out.println("=========");
-        // 缓存已经过期 线程5和线程6并发去请求 线程5进行load新数据，线程6返回旧值。
+        System.out.println("=====3====");
+        // 场景3: 缓存已经过期 线程5和线程6并发去请求 线程5进行load新数据，线程6返回旧值。
         Thread.sleep(5000);
         Thread thread5 = createThread(5, cache);
         Thread thread6 = createThread(6, cache);
