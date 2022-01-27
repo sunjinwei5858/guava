@@ -1768,7 +1768,9 @@ class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> 
     }
 
     int hash(@Nullable Object key) {
+        // 1 计算hashcode
         int h = keyEquivalence.hash(key);
+        // 2 rehash
         return rehash(h);
     }
 
@@ -2162,12 +2164,10 @@ class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> 
                 // 如果count不为0 说明table有数据 才去缓存中找
                 if (count != 0) { // read-volatile
                     long now = map.ticker.read();
-                    //
                     ReferenceEntry<K, V> e = getLiveEntry(key, hash, now);
                     if (e == null) {
                         return null;
                     }
-
                     V value = e.getValueReference().get();
                     if (value != null) {
                         recordRead(e, now);
